@@ -1,121 +1,170 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:async';
-import 'dart:convert';
+import 'package:flutter_vis/rest_api.dart';
 
 void main() => runApp(MyApp());
-var uri = Uri.parse("https://jsonplaceholder.typicode.com/posts/1");
-// For Http Request Here ok bro
-Future<Post> fecthPost() async {
-  final response = await http.get(uri);
-  if (response.statusCode == 200) {
-    return Post.fromJson(json.decode(response.body));
-  } else {
-    throw Exception('Failed to make request');
-  }
-}
-
-// Make Claa Post Model
-class Post {
-  final int userId;
-  final int id;
-  final String title;
-  final String body;
-
-  Post({this.userId, this.id, this.title, this.body});
-
-  factory Post.fromJson(Map<String, dynamic> json) {
-    return Post(
-        userId: json['userID'],
-        id: json['id'],
-        title: json['title'],
-        body: json['body']);
-  }
-}
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.red,
+        primarySwatch: Colors.purple,
       ),
-      home: MyHomePage(title: 'Get API'),
+      home: EmployeePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class EmployeePage extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _EmployeePageState createState() => _EmployeePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
-  // Make constructor
-  final Future<Post> post = fecthPost();
-
+class _EmployeePageState extends State<EmployeePage> {
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-        appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text(widget.title),
-        ),
-        body: Center(
-          child: FutureBuilder<Post>(
-            future: post,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                print(snapshot.data.title);
-                return Text(snapshot.data.title,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                        fontSize: 20.0));
-              } else if (snapshot.hasError) {
-                return Text(
-                  "${snapshot.error}",
-                  style: TextStyle(fontWeight: FontWeight.bold),
+      appBar: AppBar(
+        title: Text('Flutter REST API'),
+      ),
+      body: FutureBuilder(
+        future: ApiService.getEmployees(),
+        builder: (context, snapshot) {
+          final employees = snapshot.data;
+
+          if (snapshot.connectionState == ConnectionState.done) {
+            return ListView.separated(
+              separatorBuilder: (context, index) {
+                return Divider(
+                  height: 2,
+                  color: Colors.black,
                 );
-              } else {
-                return CircularProgressIndicator(
-                  backgroundColor: Colors.amber,
+              },
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(employees[index]['id'].toString()),
+                  //subtitle: Text('Title: ${employees[index]['title']}'),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text('Title: ${employees[index]['title']}'),
+                      FlatButton(child: Text('more..'), onPressed: () {})
+                    ],
+                  ),
+                  // title: Text("${snapshot.error}"),
+                  // subtitle: Text('Age: ${employees[]}'),
                 );
-              }
-            },
+              },
+              itemCount: employees.length,
+              // itemCount: 5,
+            );
+          }
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddNewEmployeePage(),
+            ),
+          );
+        },
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class AddNewEmployeePage extends StatefulWidget {
+  AddNewEmployeePage({Key key}) : super(key: key);
+
+  _AddNewEmployeePageState createState() => _AddNewEmployeePageState();
+}
+
+class _AddNewEmployeePageState extends State<AddNewEmployeePage> {
+  final _employeeNameController = TextEditingController();
+  final _employeeAge = TextEditingController();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('New Employee'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.all(10),
+          child: Column(
+            children: <Widget>[
+              TextField(
+                controller: _employeeNameController,
+                decoration: InputDecoration(hintText: 'Employee Name'),
+              ),
+              TextField(
+                controller: _employeeAge,
+                decoration: InputDecoration(hintText: 'Employee Age'),
+                keyboardType: TextInputType.number,
+              ),
+              RaisedButton(
+                child: Text(
+                  'SAVE',
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+                color: Colors.purple,
+                onPressed: () {
+                  final body = {
+                    "name": _employeeNameController.text,
+                    "age": _employeeAge.text,
+                  };
+                  ApiService.addEmployee(body).then((success) {
+                    if (success) {
+                      showDialog(
+                        builder: (context) => AlertDialog(
+                          title: Text('Employee has been added!!!'),
+                          actions: <Widget>[
+                            FlatButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _employeeNameController.text = '';
+                                _employeeAge.text = '';
+                              },
+                              child: Text('OK'),
+                            )
+                          ],
+                        ),
+                        context: context,
+                      );
+                      return;
+                    } else {
+                      showDialog(
+                        builder: (context) => AlertDialog(
+                          title: Text('Error Adding Employee!!!'),
+                          actions: <Widget>[
+                            FlatButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              child: Text('OK'),
+                            )
+                          ],
+                        ),
+                        context: context,
+                      );
+                      return;
+                    }
+                  });
+                },
+              )
+            ],
           ),
-        ));
+        ),
+      ),
+    );
   }
 }
