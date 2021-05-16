@@ -1,7 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:async';
+import 'dart:convert';
 
-void main() {
-  runApp(MyApp());
+void main() => runApp(MyApp());
+var uri = Uri.parse("https://jsonplaceholder.typicode.com/posts/1");
+// For Http Request Here ok bro
+Future<Post> fecthPost() async {
+  final response = await http.get(uri);
+  if (response.statusCode == 200) {
+    return Post.fromJson(json.decode(response.body));
+  } else {
+    throw Exception('Failed to make request');
+  }
+}
+
+// Make Claa Post Model
+class Post {
+  final int userId;
+  final int id;
+  final String title;
+  final String body;
+
+  Post({this.userId, this.id, this.title, this.body});
+
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+        userId: json['userID'],
+        id: json['id'],
+        title: json['title'],
+        body: json['body']);
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -20,9 +49,9 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.red,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Get API'),
     );
   }
 }
@@ -45,19 +74,9 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
+  // Make constructor
+  final Future<Post> post = fecthPost();
 
   @override
   Widget build(BuildContext context) {
@@ -68,46 +87,35 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+        appBar: AppBar(
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: Text(widget.title),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
+        body: Center(
+          child: FutureBuilder<Post>(
+            future: post,
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                print(snapshot.data.title);
+                return Text(snapshot.data.title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                        fontSize: 20.0));
+              } else if (snapshot.hasError) {
+                return Text(
+                  "${snapshot.error}",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                );
+              } else {
+                return CircularProgressIndicator(
+                  backgroundColor: Colors.amber,
+                );
+              }
+            },
+          ),
+        ));
   }
 }
