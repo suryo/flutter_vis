@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_vis/rest_api.dart';
+import 'detail.dart';
 
 void main() => runApp(MyApp());
 
@@ -48,7 +49,14 @@ class _EmployeePageState extends State<EmployeePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text('Title: ${employees[index]['title']}'),
-                      FlatButton(child: Text('more..'), onPressed: () {})
+                      FlatButton(
+                          child: Text('more..'),
+                          onPressed: () {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => DetailPage()));
+                          })
                     ],
                   ),
                   // title: Text("${snapshot.error}"),
